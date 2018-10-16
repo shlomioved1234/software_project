@@ -1,0 +1,64 @@
+ 
+ {% extends "base.html" %}
+
+ {% set nav_active = "register" %}
+
+ {% block btitle %}
+    Register
+{% endblock %}
+
+
+{% block page_content %}
+
+<div class="container col-sm-offset-3 col-sm-6">
+
+    <div class="well form-well">
+        <h3 class="text-center"> Register </h3>
+        <form action="/registerAuth" method="POST">
+            <div class="form-group">
+                <label for="username">School Email Address</label>
+                <input class="form-control" id="email" style="font-size:16pt" type="text" name="email" placeholder="email_address@school.edu" required/>
+            </div>
+            <div class="form-group">
+                <label for="school">School Name</label>
+                <input class="form-control" id="school" style="font-size:16pt" type="text" name="school" placeholder="Somewhere University" required/>
+            </div>
+            <div class="form-group">
+                <label>Name</label>
+                <div class="row">
+                    <div class="col-sm-6">                    
+                        <input class="form-control" id="name" style="font-size:16pt" type="text" name="fname" placeholder="First" required/>
+                    </div>
+                    <div class="col-sm-6">
+                        <input class="form-control" id="lname" style="font-size:16pt" type="text" name="lname" placeholder="Last" required/>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="password">Choose a Password</label>
+                <input class="form-control" id="password" style="font-size:16pt" type="password" name="password" placeholder="Password" required/>
+            </div>
+            <div class="form-group">
+                <label for="pass-conf">Confirm your Password</label>
+                <input class="form-control" id="pass-conf" style="font-size:16pt" type="password" name="pass-conf" placeholder="Password" required/>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-block btn-primary">Register</button>
+            </div>
+        </form>
+
+        <h3 class="text-center">
+            <small>
+                Already have an account?
+                <a href="/login">Login</a>
+            </small>
+        </h3>
+    </div>
+    {% if error %}
+    <div class="alert alert-danger fade in">
+        <a href='#' class="close" data-dismiss="alert" aria-label="close">&times;</a>
+        <strong>Error:</strong> {{error}}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

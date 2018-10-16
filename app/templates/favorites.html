@@ -1,0 +1,116 @@
+ {% extends "base.html" %} {% set nav_active = 'favorites' %} {% set authenticated = True %} {% block head %} {{ super() }} {% endblock %} {% block btitle %} Favorites {% endblock %} {% block bstyles %}
+<style>
+    form {
+        padding-top: 20px;
+        padding-bottom: 30px;
+    }
+    
+    .panel-body .img-responsive {
+        margin: 0 auto;
+    }
+</style>
+{% endblock %} {% block page_content %}
+
+
+{% with error = get_flashed_messages(with_categories=true) %} {% for c, e in error %}
+<div class="alert alert-{{c}} alert-dismissable fade in">
+    <a href='#' class="close" data-dismiss="alert" aria-label="close">&times;</a> {{e}}
+</div>
+{% endfor %} {% endwith %} {% if posts %} {% for line in posts %}
+<div class="panel panel-default" id="{{line.id}}">
+    <div class="panel-heading">
+        <span class="text-primary">{{line.first_name}} {{line.last_name}}</span>
+        <span class="text-muted">&#9658;</span> {{line.content_name}}
+        <div class="pull-right">
+            {% if line.public == 1 %}
+            <span class="glyphicon glyphicon-eye-open"></span> {% else %}
+            <span class="glyphicon glyphicon-eye-close"></span> {% endif %}
+            <small>{{line.timest|time_ago}}&nbsp;</small> {% if (username == line.username) %}
+            <a href="/postdel?username={{line.username}}&id={{line.id}}" title="Delete post" class="close deletePost">&times;</a> {% endif %}
+        </div>
+    </div>
+    <div class="panel-body">
+        <a href="#col{{line.id}}" data-toggle="collapse">
+            <img src="/content/{{line.file_path}}" alt="{{line.content_name}}" class="img-responsive img-rounded">
+        </a>
+        {% for t in line.tags %}
+        <span style="padding: 4pt; display: inline-block; margin-top: 5pt;" class="label label-default">
+            <span class="glyphicon glyphicon-tag"></span> {{t.first_name}} {{t.last_name}}
+        </span>
+        {% endfor %}
+        <div id="col{{line.id}}" class="collapse">
+            <hr>
+            <form class="form-inline" style="padding-top:0pt;padding-bottom:0pt;" action="/tag" method="POST">
+                <div class="form-group">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="taggee" placeholder="Tag a friend!" required>
+                        <input type="hidden" class="form-control" name="id" value="{{line.id}}">
+                        <label class="input-group-btn">
+                            <button type="submit" class="btn btn-default">
+                                Tag
+                            </button>
+                        </label>
+                    </div>
+                </div>
+            </form>
+            {% if username == line.username %}
+            <hr>
+            <form class="form-inline" style="padding-top:10px;padding-bottom:0pt;" action="/share" method="POST">
+                <div class="form-group">
+                    <select class="form-control" name="group_name" required>
+                        <option value="" disabled selected hidden>Group</option>
+                        {% for group in groups %}
+                        <option>{{group.group_name}}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" class="form-control" name="id" value="{{line.id}}" />
+                    <button type="submit" class="btn btn-default">
+                        Share
+                    </button>
+                </div>
+            </form>
+            {% endif %}
+            <hr>
+            <form class="form-inline" action="/favoriteDel" method="POST">
+            
+                <div class="form-group">
+                    <input type="hidden" class="form-control" name="id" value="96" />
+                    <button type="submit" class="btn btn-default btn-sm">
+                        <span class="glyphicon glyphicon-open"></span> Unsave
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="panel-footer">
+        {% if line.comments %}
+        <h5 style="margin-bottom: 0pt;">
+            {{line.comments|length}} {% if line.comments|length > 1 %} Comments {% else %} Comment {% endif %}
+        </h5>
+        {% endif %}
+        <form class="form" style="padding-bottom:0pt;" action="/comment" method="POST">
+            <div class="form-group">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="comment" placeholder="Make a comment!">
+                    <input type="hidden" class="form-control" name="id" value="{{line.id}}">
+                    <label class="input-group-btn">
+                    <button type="submit" class="btn btn-default">Comment</button>
+                </label>
+                </div>
+            </div>
+        </form>
+        {% for c in line.comments %}
+        <div style="padding-bottom: 5pt;" class="container-fluid">
+            <span class="text-info">{{c.first_name}} {{c.last_name}}</span> &nbsp;
+            <div class="pull-right">
+                {% if (username == c.username or username == line.username) %}
+                <a href="/commentdel?username={{c.username}}&id={{line.id}}&ts={{c.timest}}" title="Remove this" class="close">&times;</a> {% endif %}
+            </div>
+            <small>{{c.timest|time_ago}}</small>
+            <br /> {{c.comment_text}}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endfor %} {% endif %} {% endblock %}

@@ -1,0 +1,28 @@
+<!-- extend from base layout -->
+<!-- Website About page -->
+{% extends "base.html" %}
+
+{% set nav_active = 'about' %}
+{% set authenticated = isAuthenticated %}
+
+{% block btitle %}
+About
+{% endblock %}
+
+{% block page_content %}
+
+<div class="jumbotron">
+    <h1>About Unibid</h1>
+    <br>
+    <p>
+        This is a application created by Shlomo Oved, Allie Haber, Anvita Hodekar, Jake Goldstein and Santhosh Chelikavada.
+    </p>
+
+    <p>
+    	github link coming soon!
+        <!-- <strong>Github</strong>: <a href="http://github.com/Dovisal1/dbproject" target="_blank">http://github.com/Dovisal1/dbproject</a> -->
+    </p>
+
+</div>
+
+{% endblock %}
