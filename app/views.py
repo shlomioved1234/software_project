@@ -13,13 +13,6 @@ import os, sys, stat
 from werkzeug.utils import secure_filename
 import uuid
 
-# conn = pymysql.connect(host=app.config['DBHOST'],
-#                        user=app.config['DBUSER'],
-#                        password=app.config['DBPASS'],
-#                        db=app.config['DBNAME'],
-#                        charset='utf8mb4',
-#                        cursorclass=pymysql.cursors.DictCursor)
-
 import pyrebase
 
 config = {
@@ -29,7 +22,6 @@ config = {
         "storageBucket": "unibid-fba8a.appspot.com"
     }
 
-# firebase = pyrebase.initialize_app(config)
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
 
@@ -145,6 +137,7 @@ def registerAuth():
     }
 
     try:
+        # THIS LINE IS NOT WORKING!!!!
         db.child("users").child(email).set(user)
 
     except pymysql.err.IntegrityError:
