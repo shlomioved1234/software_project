@@ -303,7 +303,7 @@ def post():
         newfilename = uuid.uuid4().hex
         photo.save(os.path.join(app.config["PHOTO_DIRECTORY"], newfilename))
     user = db.child("users").child(make_unique_id(uname)).get().val()
-    ad = { "title": title, "description": description, "photo": newfilename, "date": date, "name":user["name"], "username": uname }
+    ad = { "title": title, "description": description, "photo": filename, "date": date, "name":user["name"], "username": uname }
     db.child("ads").push(ad)
     
     return redirect(url_for('home'))
