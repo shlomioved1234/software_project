@@ -6,13 +6,13 @@ from flask import Flask
 from functools import wraps
 
 from app import app
-
+from datetime import datetime
 import pymysql.cursors
 import hashlib
 import os, sys, stat
 from werkzeug.utils import secure_filename
 import uuid
-
+import time
 import pyrebase
 
 config = {
@@ -44,7 +44,7 @@ def get_fname():
     email = session['username']
 
     user = db.child("users").child(make_unique_id(email)).get().val()
-    session['first_name'] = user["email"]
+    session['first_name'] = user["name"].split()[0]
     return session['first_name']
 
 #Routes Index Page
@@ -126,12 +126,8 @@ def registerAuth():
     try:
         user_id = make_unique_id(email)
         db.child("users").child(user_id).set(user)
-
-    # NOT SURE ABOUT THIS PART...should be a bit cleanerVVV
     except Exception as err:
         return render_template('register.html', error=err)
-    # NOT SURE ABOUT THIS PART...should be a bit cleaner ^^^
-
     session['username'] = email
     return redirect(url_for('home'))
 
@@ -144,22 +140,20 @@ def changeAccountInfo():
     lname = request.form['lname']
     password = request.form['password']
     passconf = request.form['pass-conf']
+    school = request.form['school']
 
     if password != passconf:
         error = "Passwords do not match."
         return render_template('settings.html', error=error)
 
     hash = hashlib.md5(password.encode('utf-8')).hexdigest()
+    user = db.child("users").child(make_unique_id(uname)).get().val()
 
-    q = """
-        UPDATE Person
-        SET first_name = %s, last_name = %s, password = %s
-        WHERE username = %s
-        """
+    user["name"] = fname + ' ' + lname
+    user["hash"] = hash
+    user["school"] = school
 
-    with conn.cursor() as cursor:
-        cursor.execute(q, (fname, lname, hash, uname))
-        conn.commit()
+    db.child("users").child(make_unique_id(uname)).update(user)
 
     return redirect(url_for('home'))
 
@@ -167,6 +161,12 @@ def changeAccountInfo():
 @login_required
 def home():
     uname = session['username']
+    results = db.child("ads").get().val()
+    posts=[]
+    for key,value in results.items():
+        value["id"]=key
+        posts.append(value)
+    
     '''
     searchQuery = request.args.get('q')
 
@@ -272,7 +272,7 @@ def home():
     return render_template('home.html',
                            #search=searchQuery,
         username=uname,
-                           #posts=posts,
+        posts=posts,
                            #favorites=favoriteIDs,
         fname=get_fname(),
                            #groups=groups
@@ -286,113 +286,51 @@ def logout():
     session.pop('username')
     return redirect('/')
 
-# #Posting
-# @app.route('/post', methods=['GET', 'POST'])
-# @login_required
-# def post():
-#     uname = session['username']
+#Posting
+@app.route('/post', methods=['GET', 'POST'])
+@login_required
+def post():
+    uname = session['username']
 
-#     cname = request.form['name']
-#     photo = request.files['file']
-#     is_public = 1 if request.form.get('public') == "public" else 0
+    title = request.form['title']
+    description = request.form['description']
+    photo = request.files['file']
+    date = datetime.now().strftime('%m-%d-%y %H:%m')
 
-#     if photo:
-#         filename = secure_filename(photo.filename)
-#         os.chmod(app.config["PHOTO_DIRECTORY"], 0o775)
-#         newfilename = uuid.uuid4().hex
-#         photo.save(os.path.join(app.config["PHOTO_DIRECTORY"], newfilename))
-#         q = """
-#             INSERT INTO Content(content_name, file_path, username, public)
-#             VALUES(%s, %s, %s, %s)
-#             """
-#         with conn.cursor() as cursor:
-#             cursor.execute(q, (cname, newfilename, uname, int(is_public)))
-#     else:
-#         q = """
-#             INSERT INTO Content(content_name, username, public)
-#             VALUES (%s, %s, %s)
-#             """
-#         with conn.cursor() as cursor:
-#             cursor.execute(q, (cname, uname, is_public))
-
-#     conn.commit()
-#     return redirect(url_for('home'))
+    if photo:
+        filename = secure_filename(photo.filename)
+        os.chmod(app.config["PHOTO_DIRECTORY"], 0o775)
+        newfilename = uuid.uuid4().hex
+        photo.save(os.path.join(app.config["PHOTO_DIRECTORY"], newfilename))
+    user = db.child("users").child(make_unique_id(uname)).get().val()
+    ad = { "title": title, "description": description, "photo": newfilename, "date": date, "name":user["name"], "username": uname }
+    db.child("ads").push(ad)
+    
+    return redirect(url_for('home'))
 
 
-# @app.route('/postdel', methods=['GET'])
-# @login_required
-# def postdel():
-#     uname = session['username']
+@app.route('/postdel', methods=['GET'])
+@login_required
+def postdel():
+    uname = session['username']
 
-#     #extract params
-#     id = request.args.get('id')
+    #extract params
+    id = request.args.get('id')
+    ad = db.child("ads").child(id).get().val()
+    if uname != ad["username"]:
+        abort(403)
+    else:
+        db.child("ads").child(id).remove()
+    return redirect(url_for('home'))
 
-#     # get content owner
-#     q = """
-#         SELECT username
-#         FROM Content
-#         WHERE id = %s
-#         """
 
-#     try:
-#         with conn.cursor() as cursor:
-#             cursor.execute(q, (id))
+# Retrieve user photos only if logged in
+@app.route('/content/<path:filename>')
+def retrieve_file(filename):
+    if not authenticated():
+        abort(404)
 
-#         item_owner = cursor.fetchone()['username']
-
-#         if uname != item_owner:
-#             """
-#             This should not happen if the user is using the UI
-#             since we only give users the option to delete their
-#             own content. So no nice error message is required.
-#             """
-#             # exit with Forbidden error
-#             abort(403)
-
-#         q = """
-#             DELETE FROM Content
-#             WHERE id = %s
-#             """
-
-#         q1 = """
-#             DELETE FROM Tag
-#             WHERE id = %s
-#             """
-        
-#         q2 = """
-#             DELETE FROM Favorite
-#             WHERE id = %s
-#             """
-
-#         with conn.cursor() as cursor:
-#             cursor.execute(q1, (id))
-#             cursor.execute(q2, (id))
-#             cursor.execute(q, (id))
-
-#         conn.commit()
-#     except pymysql.err.IntegrityError as e:
-#         print(e)
-#         flash('Database Error', 'danger')
-
-#     return redirect(url_for('home'))
-
-# # Retrieve user photos only if logged in
-# @app.route('/content/<path:filename>')
-# def retrieve_file(filename):
-#     if not authenticated():
-#         abort(404)
-
-#     uname = session['username']
-
-#     q = """
-#         SELECT file_path
-#         FROM Content
-#         WHERE username = %s
-#         AND file_path = %s
-#         """
-#     with conn.cursor() as cursor:
-#         cursor.execute(q, (uname, filename))
-#         res = cursor.fetchone()
+    uname = session['username']
 
 #     if res:
 #         return send_from_directory(app.config['PHOTO_DIRECTORY'], filename)

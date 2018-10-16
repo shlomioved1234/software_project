@@ -12,7 +12,7 @@
 {% endblock %} {% block page_content %} {% if not search %}
 <div class="panel panel-default">
     <div class="panel-heading">
-        Make a Post
+        Make a Ad
     </div>
 
     <div class="panel-body">
@@ -28,10 +28,10 @@
                     <input type="text" class="form-control" readonly>
                 </div>
                 <div class="form-group">
-                    <input class="form-control" type="text" name="name" placeholder="Caption" required/>
+                    <input class="form-control" type="text" name="title" placeholder="Title" required/>
                 </div>
-                <div class="checkbox">
-                    <label><input type="checkbox" name="public" value="public"/>Public</label>
+                <div class="form-group">
+                    <input class="form-control" type="text" name="description" placeholder="Description" required/>
                 </div>
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary" />
@@ -46,28 +46,22 @@
 <div class="alert alert-{{c}} alert-dismissable fade in">
     <a href='#' class="close" data-dismiss="alert" aria-label="close">&times;</a> {{e}}
 </div>
-{% endfor %} {% endwith %} {% if posts %} {% for line in posts %}
+{% endfor %} {% endwith %}
+
+{% if posts %} {% for line in posts %}
 <div class="panel panel-default" id="{{line.id}}">
     <div class="panel-heading">
-        <span class="text-primary">{{line.first_name}} {{line.last_name}}</span>
-        <span class="text-muted">&#9658;</span> {{line.content_name}}
-        {% if line.groups|length > 0 %}
-        <small> shared with </small>
-        {% for g in line.groups %}
-            {{g.group_name}}{% if line.groups|length != loop.index %},{% endif %}
-        {% endfor %}
-        {% endif %}
+        <span class="text-primary">{{line.name}}</span>
+        <span class="text-muted">&#9658;</span> {{line.title}}
+
         <div class="pull-right">
-            {% if line.public == 1 %}
-            <span class="glyphicon glyphicon-eye-open"></span> {% else %}
-            <span class="glyphicon glyphicon-eye-close"></span> {% endif %}
-            <small>{{line.timest|time_ago}}&nbsp;</small> {% if (username == line.username) %}
+            <small>{{line.date}}&nbsp;</small> {% if (username == line.username) %}
             <a href="/postdel?username={{line.username}}&id={{line.id}}" title="Delete post" class="close deletePost">&times;</a> {% endif %}
         </div>
     </div>
     <div class="panel-body">
         <a href="#col{{line.id}}" data-toggle="collapse">
-            <img src="/content/{{line.file_path}}" alt="{{line.content_name}}" class="img-responsive img-rounded">
+            <img src="/content/{{line.filepath}}" alt="{{line.title}}" class="img-responsive img-rounded">
         </a>
         {% for t in line.tags %}
         <span style="padding: 4pt; display: inline-block; margin-top: 5pt;" class="label label-default">
@@ -177,4 +171,4 @@
         });
     });
 </script>
-{% endblock %}<
+{% endblock %}
