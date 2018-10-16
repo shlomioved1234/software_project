@@ -41,15 +41,10 @@ def get_fname():
         return ""
     if 'first_name' in session:
         return session['first_name']
-    uname = session['username']
+    email = session['username']
 
-    q = 'SELECT first_name FROM Person WHERE username = %s'
-
-    with conn.cursor() as cursor:
-        cursor.execute(q, (uname))
-        result = cursor.fetchone()
-    
-    session['first_name'] = result['first_name']
+    user = db.child("users").child(make_unique_id(email)).get().val()
+    session['first_name'] = user["email"]
     return session['first_name']
 
 #Routes Index Page
@@ -87,24 +82,11 @@ def loginAuth():
     username = request.form['username']
     password = request.form['password']
     hash = hashlib.md5(password.encode('utf-8')).hexdigest()
+    user = db.child("users").child(make_unique_id(username)).get().val()
 
-    q = """
-        SELECT first_name
-        FROM Person
-        WHERE username = %s
-        AND password = %s
-        """
-
-    with conn.cursor() as cursor:
-        cursor.execute(q, (username, hash))
-
-    data = cursor.fetchone()
-
-    if(data):
-        #creates a session for the the user
-        #session is a built in
+    if( hash == user["hash"] and username == user["email"]):
         session['username'] = username
-        session['first_name'] = data['first_name']
+        session['first_name'] = user['name'].split()[0]
         return redirect(url_for('home'))
     else:
         #returns an error message to the html page
@@ -143,14 +125,14 @@ def registerAuth():
 
     try:
         user_id = make_unique_id(email)
-        db.child("users").child(user_id).push(user)
+        db.child("users").child(user_id).set(user)
 
     # NOT SURE ABOUT THIS PART...should be a bit cleanerVVV
     except Exception as err:
         return render_template('register.html', error=err)
     # NOT SURE ABOUT THIS PART...should be a bit cleaner ^^^
 
-    session['username'] = username
+    session['username'] = email
     return redirect(url_for('home'))
 
 
@@ -185,6 +167,7 @@ def changeAccountInfo():
 @login_required
 def home():
     uname = session['username']
+    '''
     searchQuery = request.args.get('q')
 
     with conn.cursor() as cursor:
@@ -285,14 +268,14 @@ def home():
             """
         cursor.execute(q, (uname))
         groups = cursor.fetchall()
-
+    '''
     return render_template('home.html',
-        search=searchQuery,
+                           #search=searchQuery,
         username=uname,
-        posts=posts,
-        favorites=favoriteIDs,
+                           #posts=posts,
+                           #favorites=favoriteIDs,
         fname=get_fname(),
-        groups=groups
+                           #groups=groups
         )
 
 
