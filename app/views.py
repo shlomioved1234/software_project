@@ -17,10 +17,10 @@ import pyrebase
 
 config = {
     "apiKey": "AIzaSyB4F-ap3T8z1xdRmwWSvMXYBqrBfdh8_BQ",
-        "authDomain": "unibid-fba8a.firebaseapp.com",
-        "databaseURL": "https://Unibid.firebaseio.com",
-        "storageBucket": "unibid-fba8a.appspot.com"
-    }
+    "authDomain": "unibid-fba8a.firebaseapp.com",
+    "databaseURL": "https://unibid-fba8a.firebaseio.com/",
+    "storageBucket": "unibid-fba8a.appspot.com"
+}
 
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
@@ -111,6 +111,11 @@ def loginAuth():
         error = 'Invalid username or password.'
         return render_template('login.html', error=error)
 
+def make_unique_id(email):
+    email = email.replace('@', '')
+    email = email.replace('.', '')
+    return email
+
 #Authenticates the register
 @app.route('/registerAuth', methods=['GET', 'POST'])
 def registerAuth():
@@ -137,17 +142,16 @@ def registerAuth():
     }
 
     try:
-        # THIS LINE IS NOT WORKING!!!!
-        db.child("users").child(email).set(user)
+        user_id = make_unique_id(email)
+        db.child("users").child(user_id).push(user)
 
-    except pymysql.err.IntegrityError:
-        error = "{} is already taken. Try another".format(username)
-        return render_template('register.html', error=error)
-    
+    # NOT SURE ABOUT THIS PART...should be a bit cleanerVVV
+    except Exception as err:
+        return render_template('register.html', error=err)
+    # NOT SURE ABOUT THIS PART...should be a bit cleaner ^^^
+
     session['username'] = username
     return redirect(url_for('home'))
-
-#Authenticates the register
 
 
 @app.route('/changeAccountInfo', methods=['GET', 'POST'])
