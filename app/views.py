@@ -109,7 +109,9 @@ def registerAuth():
     if password != passconf:
         error = "Passwords do not match."
         return render_template('register.html', error=error)
-
+    if email[-3:] != "edu":
+        error = "Email is not .edu."
+        return render_template('register.html', error=error)
     fname = request.form['fname']
     lname = request.form['lname']
     hash = hashlib.md5(password.encode('utf-8')).hexdigest()
@@ -126,6 +128,7 @@ def registerAuth():
     try:
         user_id = make_unique_id(email)
         db.child("users").child(user_id).set(user)
+        db.child("favorites").child(user_id).set({"placeholder":1})
     except Exception as err:
         return render_template('register.html', error=err)
     session['username'] = email
@@ -164,8 +167,10 @@ def home():
     results = db.child("ads").get().val()
     posts=[]
     for key,value in results.items():
-        value["id"]=key
-        posts.append(value)
+        if(key != "placeholder"):
+            value["id"]=key
+            posts.append(value)
+
     
     '''
     searchQuery = request.args.get('q')
@@ -302,8 +307,9 @@ def post():
         os.chmod(app.config["PHOTO_DIRECTORY"], 0o775)
         newfilename = uuid.uuid4().hex
         photo.save(os.path.join(app.config["PHOTO_DIRECTORY"], newfilename))
+    
     user = db.child("users").child(make_unique_id(uname)).get().val()
-    ad = { "title": title, "description": description, "photo": filename, "date": date, "name":user["name"], "username": uname }
+    ad = { "title": title, "description": description, "photo": newfilename, "date": date, "name":user["name"], "username": uname }
     db.child("ads").push(ad)
     
     return redirect(url_for('home'))
@@ -810,48 +816,44 @@ def retrieve_file(filename):
 
 #     return redirect(url_for('home'))
 
-# @app.route('/favoriteAdd', methods=['POST'])
-# @login_required
-# def addFavorite():
-#     uname = session['username']
-#     id = request.form['id']
+@app.route('/favoriteAdd', methods=['POST'])
+@login_required
+def addFavorite():
+    uname = session['username']
+    id = request.form['id']
+    ad = db.child("ads").child(id).get().val()
+    db.child("favorites").child(make_unique_id(uname)).update({id:1})
+    return redirect(url_for('home'))
+
+@app.route('/favoriteDel', methods=['POST'])
+@login_required
+def deleteFavorite():
+    uname = session['username']
+    id = request.form['id']
+    ad = db.child("ads").child(id).get().val()
+    db.child("ads").child(make_unique_id(uname)).remove(id)
+    return redirect(url_for('home'))
+
+#Favorites
+@app.route('/favorites')
+@login_required
+def favorites():
+    username = session['username']
+    uname = make_unique_id(username)
+    favorites = db.child("favorites").child(uname).get().val()
+    ads = db.child("ads").get().val()
+    data = []
+    user_favorites = []
+    for key,value in favorites.items():
+        if key != "placeholder":
+            user_favorites.append(key)
+    for key, value in ads.items():
+        if key in user_favorites:
+            value["id"]=key
+            data.append(value)
+    return render_template("favorites.html", username=username, posts=data, fname=get_fname())
 
 #     q = """
-#         INSERT INTO Favorite(id, username)
-#         VALUES (%s, %s)
-#         """
-
-#     with conn.cursor() as cursor:
-#         cursor.execute(q, (id, uname))
-
-#     conn.commit()
-#     return redirect(url_for('home'))
-
-
-# @app.route('/favoriteDel', methods=['POST'])
-# @login_required
-# def deleteFavorite():
-#     uname = session['username']
-#     id = request.form['id']
-
-#     q = """
-#         DELETE FROM Favorite
-#         WHERE id = %s
-#         AND username = %s
-#         """
-    
-#     with conn.cursor() as cursor:
-#         cursor.execute(q, (id, uname))
-    
-#     conn.commit()
-#     return redirect(url_for('home'))
-
-# #Favorites
-# @app.route('/favorites')
-# @login_required
-# def favorites():
-#     username = session['username']
-#     q = """ 
 #             SELECT Content.id, file_path, content_name, timest,\
 #             Content.username, first_name, last_name\
 #             FROM Person NATURAL JOIN Content JOIN Favorite ON (Content.id = Favorite.id) \
@@ -894,5 +896,5 @@ def retrieve_file(filename):
 #         with conn.cursor() as cursor:
 #             cursor.execute(q3, (d["id"]))
 #             d['tags'] = cursor.fetchall()
-#     return render_template("favorites.html", username=username, posts=data, fname=get_fname(), groups=groups)
+#     return render_template("favorites.html", username=username, posts=data, fname=get_fname())
 

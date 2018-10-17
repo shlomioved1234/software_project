@@ -22,7 +22,7 @@
                     <label class="input-group-btn">
 						<span class="btn btn-primary">
 							Browse&hellip;
-							<input type="file" name="file" accept="image/*" style="display: none;">
+							<input type="file" name="file" accept="image/*" style="display: none;" required>
 						</span>
 					</label>
                     <input type="text" class="form-control" readonly>
@@ -63,6 +63,9 @@
         <a href="#col{{line.id}}" data-toggle="collapse">
             <img src="/content/{{line.filepath}}" alt="{{line.title}}" class="img-responsive img-rounded">
         </a>
+        <div class="panel-body">
+           <span class="text-primary">{{line.description}}</span>
+        </div>
         {% for t in line.tags %}
         <span style="padding: 4pt; display: inline-block; margin-top: 5pt;" class="label label-default">
 			<span class="glyphicon glyphicon-tag"></span> {{t.first_name}} {{t.last_name}}
