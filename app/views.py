@@ -84,14 +84,21 @@ def loginAuth():
     hash = hashlib.md5(password.encode('utf-8')).hexdigest()
     user = db.child("users").child(make_unique_id(username)).get().val()
 
-    if( hash == user["hash"] and username == user["email"]):
-        session['username'] = username
-        session['first_name'] = user['name'].split()[0]
-        return redirect(url_for('home'))
-    else:
+    try:
+        if( hash == user["hash"] and username == user["email"]):
+            session['username'] = username
+            session['first_name'] = user['name'].split()[0]
+            return redirect(url_for('home'))
+        else:
+            #returns an error message to the html page
+            error = 'Invalid username or password.'
+            return render_template('login.html', error=error)
+    except Exception as err:
         #returns an error message to the html page
         error = 'Invalid username or password.'
         return render_template('login.html', error=error)
+
+    
 
 def make_unique_id(email):
     email = email.replace('@', '')
