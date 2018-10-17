@@ -73,7 +73,9 @@
         {% endfor %}
         <div id="col{{line.id}}" class="collapse">
             <hr>
-            <form class="form-inline" style="padding-top:0pt;padding-bottom:0pt;" action="/tag" method="POST">
+
+            <!-- TAGGING -->
+<!--             <form class="form-inline" style="padding-top:0pt;padding-bottom:0pt;" action="/tag" method="POST">
                 <div class="form-group">
                     <div class="input-group">
                         <input type="text" class="form-control" name="taggee" placeholder="Tag a friend!" required>
@@ -85,7 +87,25 @@
                         </label>
                     </div>
                 </div>
+            </form> -->
+            <!-- TAGGING -->
+
+            <!-- BIDDING -->
+            <form class="form-inline" style="padding-top:0pt;padding-bottom:0pt;" action="/bid" method="POST">
+                <div class="form-group">
+                    <div class="input-group">
+                        <input type="number" class="form-control" name="bid" placeholder="Place a bid here!" required>
+                        <input type="hidden" class="form-control" name="id" value="{{line.id}}">
+                        <label class="input-group-btn">
+                            <button type="submit" class="btn btn-default">
+                                Enter Bid
+                            </button>
+                        </label>
+                    </div>
+                </div>
             </form>
+            <!-- BIDDING -->
+            
             {% if username == line.username %}
             <hr>
             <form class="form-inline" style="padding-top:10px;padding-bottom:0pt;" action="/share" method="POST">
