@@ -6,7 +6,6 @@ from flask import Flask
 from functools import wraps
 
 from app import app
-from datetime import datetime
 import pymysql.cursors
 import hashlib
 import os, sys, stat
@@ -21,7 +20,6 @@ config = {
     "databaseURL": "https://unibid-fba8a.firebaseio.com/",
     "storageBucket": "unibid-fba8a.appspot.com"
 }
-
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
 
@@ -46,6 +44,7 @@ def get_fname():
     user = db.child("users").child(make_unique_id(email)).get().val()
     session['first_name'] = user["name"].split()[0]
     return session['first_name']
+
 
 #Routes Index Page
 @app.route('/')
@@ -84,21 +83,14 @@ def loginAuth():
     hash = hashlib.md5(password.encode('utf-8')).hexdigest()
     user = db.child("users").child(make_unique_id(username)).get().val()
 
-    try:
-        if( hash == user["hash"] and username == user["email"]):
-            session['username'] = username
-            session['first_name'] = user['name'].split()[0]
-            return redirect(url_for('home'))
-        else:
-            #returns an error message to the html page
-            error = 'Invalid username or password.'
-            return render_template('login.html', error=error)
-    except Exception as err:
+    if( hash == user["hash"] and username == user["email"]):
+        session['username'] = username
+        session['first_name'] = user['name'].split()[0]
+        return redirect(url_for('home'))
+    else:
         #returns an error message to the html page
         error = 'Invalid username or password.'
         return render_template('login.html', error=error)
-
-    
 
 def make_unique_id(email):
     email = email.replace('@', '')
@@ -129,9 +121,9 @@ def registerAuth():
         'name': fname + ' ' + lname,
         'email': email,
         'hash': hash,
-        'school': school
+        'school': school,
+        'rating':"5",
     }
-
     try:
         user_id = make_unique_id(email)
         db.child("users").child(user_id).set(user)
@@ -171,124 +163,25 @@ def changeAccountInfo():
 @login_required
 def home():
     uname = session['username']
-    results = db.child("ads").get().val()
-    posts=[]
-    for key,value in results.items():
-        if(key != "placeholder"):
-            value["id"]=key
-            posts.append(value)
-
-    
-    '''
     searchQuery = request.args.get('q')
-
-    with conn.cursor() as cursor:
-        if not searchQuery:
-            q =  """
-                SELECT id, file_path, content_name, timest,
-                    username, first_name, last_name, public
-                FROM Content NATURAL JOIN Person
-                WHERE username = %s
-                OR public
-                OR id in (
-                    SELECT id
-                    FROM Share JOIN Member ON
-                    Share.username = Member.username_creator
-                        AND Share.group_name = Member.group_name
-                    WHERE Member.username = %s
-                    )
-                ORDER BY timest DESC
-                """
-            cursor.execute(q, (uname, uname))
-        else:
-            modifiedSearchQuery = '%' + searchQuery + '%'
-            q = """
-                SELECT id, file_path, content_name, timest,
-                    username, first_name, last_name
-                FROM Content NATURAL JOIN Person
-                WHERE (
-                    username = %s
-                    OR public
-                    OR id in (
-                        SELECT id
-                        FROM Share JOIN Member ON
-                        Share.username = Member.username_creator
-                            AND Share.group_name = Member.group_name
-                        WHERE Member.username = %s
-                        )
-                    )
-                AND (
-                    content_name like %s
-                    OR username like %s
-                    )
-                ORDER BY timest DESC
-                """
-            cursor.execute(q, (uname, uname, modifiedSearchQuery, modifiedSearchQuery))
-
-        posts = cursor.fetchall()
-
-        if searchQuery and len(posts) == 0:
-            e = "No results found!"
-            flash(e, "danger")
-
-        q1 = """
-                SELECT id FROM Favorite
-                WHERE username = %s
-                """
-
-        cursor.execute(q1, (uname))
-        favorites = cursor.fetchall()
-        favoriteIDs = []
-        for favorite in favorites:
-            favoriteIDs.append(favorite['id'])
-
-        q1 = """
-            SELECT username, first_name, last_name, timest, comment_text
-            FROM Comment NATURAL JOIN Person
-            WHERE id = %s
-            ORDER BY timest DESC
-            """
-
-        q2 = """
-            SELECT first_name, last_name
-            FROM Tag JOIN Person ON
-                Tag.username_taggee = Person.username
-            WHERE id = %s AND status = true
-            ORDER BY timest DESC
-            """
-
-        q3 = """
-            SELECT group_name
-            FROM Share
-            WHERE id = %s
-            """
-
-        for p in posts:
-            cursor.execute(q1, (p['id']))
-            p['comments'] = cursor.fetchall()
-
-            cursor.execute(q2, (p['id']))
-            p['tags'] = cursor.fetchall()
-
-            cursor.execute(q3, (p['id']))
-            p['groups'] = cursor.fetchall()
-
-        q = """
-            SELECT username_creator, group_name
-            FROM Member
-            WHERE username = %s
-            """
-        cursor.execute(q, (uname))
-        groups = cursor.fetchall()
-    '''
-    return render_template('home.html',
-                           #search=searchQuery,
-        username=uname,
-        posts=posts,
-                           #favorites=favoriteIDs,
-        fname=get_fname(),
-                           #groups=groups
-        )
+    if searchQuery:
+        results = db.child("ads").get().val()
+        posts=[]
+        for key,value in results.items():
+            if(key != "placeholder" and searchQuery.lower() in value["title"].lower()):
+                value["id"]=key
+                del value["comments"]["placeholder"]
+                posts.append(value)
+        return render_template('home.html', username=uname, posts=posts, fname=get_fname())
+    else:
+        results = db.child("ads").get().val()
+        posts=[]
+        for key,value in results.items():
+            if(key != "placeholder"):
+                value["id"]=key
+                del value["comments"]["placeholder"]
+                posts.append(value)
+        return render_template('home.html', username=uname, posts=posts, fname=get_fname())
 
 
 #Logging out
@@ -307,20 +200,27 @@ def post():
     title = request.form['title']
     description = request.form['description']
     photo = request.files['file']
-    date = datetime.now().strftime('%m-%d-%y %H:%m')
+    date = time.strftime("%m-%d-%y %H:%M")
+    starting_price = request.form["starting_price"]
 
     if photo:
         filename = secure_filename(photo.filename)
         os.chmod(app.config["PHOTO_DIRECTORY"], 0o775)
         newfilename = uuid.uuid4().hex
         photo.save(os.path.join(app.config["PHOTO_DIRECTORY"], newfilename))
+
     
     user = db.child("users").child(make_unique_id(uname)).get().val()
-    ad = { "title": title, "description": description, "photo": newfilename, "date": date, "name":user["name"], "username": uname }
+    ad = { "title": title, "description": description, "photo": newfilename, "date": date, "name":user["name"], "username": uname, "current_price":starting_price, "current_bidder": "None", "comments": {"placeholder":{"username":"placeholder", "text":"placeholder", "time": "placeholder", "name": "placeholder"} } }
     db.child("ads").push(ad)
     
     return redirect(url_for('home'))
 
+@app.route('/chat')
+@login_required
+def chat():
+
+    return render_template('chat.html')
 
 @app.route('/postdel', methods=['GET'])
 @login_required
@@ -344,140 +244,61 @@ def retrieve_file(filename):
         abort(404)
 
     uname = session['username']
-
-#     if res:
-#         return send_from_directory(app.config['PHOTO_DIRECTORY'], filename)
-#     else:
-#         abort(404)
-
-# @app.route('/comment', methods=['POST'])
-# @login_required
-# def comment():
-#     uname = session['username']
-#     id = request.form['id']
-#     comment_text = request.form['comment']
-
-#     if comment_text == '':
-#         return redirect(url_for('home'))
-
-#     q = """
-#         INSERT INTO Comment(id, username, comment_text)
-#         VALUES (%s, %s, %s)
-#         """
-
-#     with conn.cursor() as cursor:
-#         cursor.execute(q, (id, uname, comment_text))
-
-#     conn.commit()
-#     return redirect(url_for('home'))
-
-# @app.route('/commentdel', methods=['GET'])
-# @login_required
-# def commentdel():
-#     uname = session['username']
-
-#     #extract params
-#     id = request.args.get('id')
-#     commenter = request.args.get('username')
-#     ts = request.args.get('ts')
-
-#     # get content owner
-#     q = 'SELECT username\
-#          FROM Content\
-#          WHERE id = %s'
-#     cursor = conn.cursor()
-#     cursor.execute(q, (id))
-#     item_owner = cursor.fetchone()['username']
-
-#     if uname != item_owner and uname != commenter:
-#         return redirect(url_for('home'))
-
-#     q = 'DELETE FROM Comment\
-#          WHERE id = %s\
-#          AND username = %s\
-#          AND timest = %s'
-
-#     cursor.execute(q, (id, commenter, ts))
-#     conn.commit()
-#     cursor.close()
-#     return redirect(url_for('home'))
-
-# def fetch_friend_data(uname):
-#     with conn.cursor() as cursor:
-#         cursor = conn.cursor()
-#         q = """
-#             SELECT first_name,
-#                 last_name, id,
-#                 Tag.timest, content_name,
-#                 username_tagger,
-#                 username_taggee
-#             FROM Person JOIN Tag
-#                 ON Person.username = Tag.username_tagger
-#                 JOIN Content USING(id) 
-#             WHERE not status
-#             AND username_taggee = %s
-#             ORDER BY timest DESC
-#             """
-
-#         cursor.execute(q, (uname))
-#         tags_pending = cursor.fetchall()
-
-#         q = """
-#             SELECT first_name,
-#                 last_name, id,
-#                 Tag.timest, content_name,
-#                 username_tagger,
-#                 username_taggee
-#             FROM Person JOIN Tag
-#                 ON Person.username = Tag.username_taggee
-#                 JOIN Content USING(id) 
-#             WHERE not status
-#             AND username_tagger = %s
-#             ORDER BY timest DESC
-#             """
-
-#         cursor.execute(q, (uname))
-#         tags_proposed = cursor.fetchall()
+    return send_from_directory(app.config['PHOTO_DIRECTORY'], filename)
 
 
-#         q = """
-#             SELECT group_name, description
-#             FROM FriendGroup
-#             WHERE username = %s
-#             """
+@app.route('/comment', methods=['POST'])
+@login_required
+def comment():
+    uname = session['username']
+    id = request.form['id']
+    comment_text = request.form['comment']
+    user = db.child("users").child(make_unique_id(uname)).get().val()
+    full_name = user["name"]
+    
+    if comment_text == '':
+        return redirect(url_for('home'))
+    db.child("ads").child(id).child("comments").push({"username":uname, "text":comment_text, "time": time.strftime("%m-%d-%y %H:%M"), "name": full_name})
+    return redirect(url_for('home'))
 
-#         cursor.execute(q, (uname))
-#         groups = cursor.fetchall()
+@app.route('/commentdel', methods=['GET'])
+@login_required
+def commentdel():
+    uname = session['username']
 
-#         q = """
-#             SELECT username, first_name, last_name
-#             FROM Person NATURAL JOIN Member
-#             WHERE group_name = %s
-#             AND username_creator = %s
-#             """
+    #extract params
+    cid = request.args.get('cid')
+    id = request.args.get('id')
+    commenter = request.args.get('username')
+    time = request.args.get('ts')
+    
+    comments = db.child("ads").child(id).child("comments").get().val()
+    del comments[cid]
+    db.child("ads").child(id).child("comments").set(comments)
+    return redirect(url_for('home'))
 
-#         for g in groups:
-#             cursor.execute(q, (g['group_name'], uname))
-#             g['members'] = cursor.fetchall()
+@app.route('/profiles', methods=['GET'])
+@login_required
+def profiles():
+    uname = session['username']
+    data = db.child("users").get().val()
+    my_profile = data[make_unique_id(uname)]
+    del data[make_unique_id(uname)]
+    all_profiles = []
+    for key, value in data.items():
+        if(key!="placeholder"):
+            value["id"]=key
+            all_profiles.append(value)
 
-#     return {
-#         'tags_pending': tags_pending,
-#         'tags_proposed': tags_proposed,
-#         'groups': groups
-#     }
+    return render_template('profiles.html', username=uname, profiles=all_profiles, me = my_profile, fname=get_fname())
 
-
-# @app.route('/friends')
-# @login_required
-# def friends():
-#     d = fetch_friend_data(session['username'])
-#     return render_template(
-#         'friends.html',
-#         tags_pending=d['tags_pending'],
-#         tags_proposed=d['tags_proposed'],
-#         groups=d['groups'],
-#         fname=get_fname()
-#         )
+@app.route('/rateUser', methods= ['POST'])
+@login_required
+def rateUser():
+    rating = request.form['rating']
+    user_id = request.form['id']
+    db.child("users").child(user_id).update({"rating":rating})
+    return redirect(url_for('profiles'))
 
 # @app.route('/tag', methods=['POST'])
 # @login_required
@@ -537,247 +358,6 @@ def retrieve_file(filename):
 
 #     return redirect(url_for('home'))
 
-
-# @app.route('/tagaccept')
-# @login_required
-# def tagaccept():
-#     uname = session['username']
-
-#     tagger = request.args.get('tagger')
-#     taggee = request.args.get('taggee')
-#     id = request.args.get('id')
-
-#     if uname != taggee:
-#         return redirect(url_for('friends'))
-
-#     q = """
-#         UPDATE Tag
-#         SET status = true
-#         WHERE id = %s
-#         AND username_tagger = %s
-#         AND username_taggee = %s
-#         """
-#     with conn.cursor() as cursor:
-#         cursor.execute(q, (id, tagger, taggee))
-#     conn.commit()
-#     return redirect(url_for('friends'))
-
-# @app.route('/tagdecline')
-# @login_required
-# def tagdecline():
-#     uname = session['username']
-
-#     tagger = request.args.get('tagger')
-#     taggee = request.args.get('taggee')
-#     id = request.args.get('id')
-
-#     if uname != taggee:
-#         return redirect(url_for('friends'))
-
-#     q = """
-#         DELETE FROM Tag
-#         WHERE id = %s
-#         AND username_tagger = %s
-#         AND username_taggee = %s
-#         """
-#     with conn.cursor() as cursor:
-#         cursor.execute(q, (id, tagger, taggee))
-#     conn.commit()
-#     return redirect(url_for('friends'))
-
-# @app.route('/groupadd', methods=['POST'])
-# @login_required
-# def groupadd():
-#     uname = session['username']
-
-#     group_name = request.form['group_name']
-#     desc = request.form['description']
-
-#     q1 = """
-#         INSERT INTO FriendGroup(group_name, username, description)
-#         VALUES (%s, %s, %s)
-#         """
-
-#     q2 = """
-#         INSERT INTO Member(username, group_name, username_creator)
-#         VALUES (%s, %s, %s)
-#         """
-
-#     try:
-#         with conn.cursor() as cursor:
-#             cursor.execute(q1, (group_name, uname, desc))
-#             cursor.execute(q2, (uname, group_name, uname))
-#         conn.commit()
-#     except pymysql.err.IntegrityError:
-#         m = """
-#             You already have a group named {}.
-#             """.format(group_name)
-#         flash(m, "danger")
-
-#     return redirect(url_for('friends'))
-
-# @app.route('/memberadd', methods=['POST'])
-# @login_required
-# def memberadd():
-#     uname = session['username']
-#     group_name = request.form['group_name']
-#     fname = request.form['fname']
-#     lname = request.form['lname']
-    
-#     q = """
-#         SELECT username
-#         FROM Person
-#         WHERE first_name = %s
-#         AND last_name = %s
-#         """
-
-#     with conn.cursor() as cursor:
-#         cursor.execute(q, (fname, lname))
-#         res = cursor.fetchall()
-    
-#     if len(res) == 0:
-#         m = """
-#             There is no user {} {}.
-#             """.format(fname, lname)
-#         flash(m, "warning")
-#     elif len(res) > 1:
-#         #need to implement better solution
-#         e = "Multiple users have that name. Select the username you wish to add."
-#         d = fetch_friend_data(session['username'])
-#         return render_template(
-#             'friends.html',
-#             tags_pending=d['tags_pending'],
-#             tags_proposed=d['tags_proposed'],
-#             groups=d['groups'],
-#             duplicate_name_error=True,
-#             usernames=res,
-#             fname=get_fname()
-#             )
-#     else:
-#         member = res[0]['username']
-#         q = """
-#             INSERT INTO Member(username, group_name, username_creator)
-#             VALUES (%s, %s, %s)
-#             """
-#         try:
-#             with conn.cursor() as cursor:
-#                 cursor.execute(q, (member, group_name, uname))
-#             conn.commit()
-#             m = "{} successfully add to {}".format(member, group_name)
-#             flash(m, "success")
-#         except pymysql.err.IntegrityError as e:
-#             m = "{} is already in {}.".format(member, group_name)
-#             flash(m, "warning")
-        
-#     return redirect(url_for('friends'))
-
-# @app.route('/memberaddu', methods=['POST'])
-# @login_required
-# def memberaddu():
-#     uname = session['username']
-#     member = request.form['username']
-#     group_name = request.form['group_name']
-
-#     q = """
-#         INSERT INTO Member(username, group_name, username_creator)
-#         VALUES (%s, %s, %s)
-#         """
-
-#     with conn.cursor() as cursor:
-#         try:
-#             cursor.execute(q, (member, group_name, uname))
-#             conn.commit()
-#             m = "{} successfully add to {}".format(member, group_name)
-#             flash(m, "success")
-#         except pymysql.err.IntegrityError as e:
-#             m = "{} is already in {}.".format(member, group_name)
-#             flash(m, "warning")
-        
-#     return redirect(url_for('friends'))
-
-# @app.route('/memberdel')
-# @login_required
-# def memberdel():
-#     uname = session['username']
-#     member = request.args.get('member')
-#     group = request.args.get('group')
-
-#     if not member or not group:
-#         abort(403)
-
-#     if member == uname:
-#         m = "You cannot delete yourself from your own group."
-#         flash(m, "danger")
-#         return redirect(url_for('friends'))
-
-#     # check which tags need to be deleted
-
-#     # Get all Tags that are on items shared by this group
-#     # that are not public or shared by another group
-#     q1 = """
-#         SELECT id, username_tagger, username_taggee
-#         FROM Tag AS t
-#         WHERE username_taggee = %s
-#         AND id in (
-#             SELECT id
-#             FROM Content
-#             WHERE NOT public
-#         )
-#         AND id in (
-#             SELECT id
-#             FROM Share
-#             WHERE id = t.id
-#             AND group_name = %s
-#             AND username = %s
-#         )
-#         AND id not in (
-#             SELECT id
-#             FROM Share JOIN Member ON
-#             Share.username = Member.username_creator
-#                 AND Share.group_name = Member.group_name
-#             WHERE Member.username = %s
-#             AND (
-#                 Member.group_name != %s
-#                 OR Member.username_creator != %s
-#             )
-#         )
-#         """
-
-#     q2 = """
-#         DELETE FROM Tag
-#         WHERE id = %s
-#         AND username_taggee = %s
-#         AND username_tagger = %s
-#         """
-
-#     q3 = """
-#         DELETE FROM Member
-#         WHERE username = %s
-#         AND group_name = %s
-#         AND username_creator = %s
-#         """
-
-#     try:
-#         with conn.cursor() as cursor:
-#             cursor.execute(q1, (member, group, uname, member, group, uname))
-#             tagsdel = cursor.fetchall()
-
-#             for t in tagsdel:
-#                 cursor.execute(q2, (t['id'], t['username_taggee'], t['username_tagger']))
-
-#             cursor.execute(q3, (member, group, uname))
-
-#         conn.commit()
-#         m = """
-#             You have defriended {}
-#             """.format(member)
-#         flash(m, "success")
-#     except Exception as e:
-#         conn.rollback()
-#         flash(str(e), "danger")
-
-#     return redirect(url_for('friends'))
-
 # @app.route('/share', methods=['POST'])
 # @login_required
 # def share():
@@ -823,6 +403,27 @@ def retrieve_file(filename):
 
 #     return redirect(url_for('home'))
 
+@app.route('/bid', methods=['POST'])
+@login_required
+def bid():
+    uname = session['username']
+    id = request.form['id']
+    ad = db.child("ads").child(id).get().val()
+    bid = int(request.form['bid'])
+    if (uname == ad["username"]):
+        error = "Can't bid on your own item."
+        flash(error, "warning")
+        return redirect(url_for('home'))
+    if (bid <= int(ad["current_price"])):
+        error = "Bid too low."
+        flash(error, "warning")
+        return redirect(url_for('home'))
+    user = db.child("users").child(make_unique_id(uname)).get().val()
+    name = get_fname()
+    db.child("ads").child(id).update({"current_price": bid, "current_bidder": name})
+    return redirect(url_for('home'))
+
+
 @app.route('/favoriteAdd', methods=['POST'])
 @login_required
 def addFavorite():
@@ -830,15 +431,17 @@ def addFavorite():
     id = request.form['id']
     ad = db.child("ads").child(id).get().val()
     db.child("favorites").child(make_unique_id(uname)).update({id:1})
-    return redirect(url_for('home'))
+    return redirect(url_for('favorites'))
 
 @app.route('/favoriteDel', methods=['POST'])
 @login_required
 def deleteFavorite():
-    uname = session['username']
+    username = session['username']
+    uname = make_unique_id(username)
     id = request.form['id']
-    ad = db.child("ads").child(id).get().val()
-    db.child("ads").child(make_unique_id(uname)).remove(id)
+    favs = db.child("favorites").child(uname).get().val()
+    del favs[id]
+    db.child("favorites").child(uname).set(favs)
     return redirect(url_for('home'))
 
 #Favorites
@@ -857,51 +460,10 @@ def favorites():
     for key, value in ads.items():
         if key in user_favorites:
             value["id"]=key
+            del value["comments"]["placeholder"]
             data.append(value)
+    if len(data) == 0:
+        flash("You have not saved any posts yet!", "warning")
     return render_template("favorites.html", username=username, posts=data, fname=get_fname())
 
-#     q = """
-#             SELECT Content.id, file_path, content_name, timest,\
-#             Content.username, first_name, last_name\
-#             FROM Person NATURAL JOIN Content JOIN Favorite ON (Content.id = Favorite.id) \
-#             WHERE Favorite.username = %s\
-#            ORDER BY timest DESC\
-#         """
-#     with conn.cursor() as cursor:
-#         cursor.execute(q, (username))
-#         data = cursor.fetchall()
-    
-#     q2 = 'SELECT username, first_name, last_name, timest, comment_text\
-#     FROM Comment NATURAL JOIN Person\
-#     WHERE id = %s\
-#     ORDER BY timest DESC'
-    
-#     q3 = 'SELECT first_name, last_name\
-#     FROM Tag JOIN Person ON\
-#     Tag.username_taggee = Person.username\
-#     WHERE id = %s AND status = true\
-#     ORDER BY timest DESC'
-
-#     q = """
-#             SELECT group_name
-#             FROM FriendGroup
-#             WHERE username = %s
-#             """
-
-#     groups = None
-#     with conn.cursor() as cursor:
-#         cursor.execute(q, (username))
-#         groups = cursor.fetchall()
-
-#     if len(data) == 0:
-#         flash("You have not saved any posts yet!", "warning")
-    
-#     for d in data:
-#         with conn.cursor() as cursor:
-#             cursor.execute(q2, (d["id"]))
-#             d['comments'] = cursor.fetchall()
-#         with conn.cursor() as cursor:
-#             cursor.execute(q3, (d["id"]))
-#             d['tags'] = cursor.fetchall()
-#     return render_template("favorites.html", username=username, posts=data, fname=get_fname())
 
