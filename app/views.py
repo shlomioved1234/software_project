@@ -83,6 +83,10 @@ def loginAuth():
     hash = hashlib.md5(password.encode('utf-8')).hexdigest()
     user = db.child("users").child(make_unique_id(username)).get().val()
 
+    if( user is None ):
+        error = 'Invalid username.'
+        return render_template('login.html', error=error)
+    
     if( hash == user["hash"] and username == user["email"]):
         session['username'] = username
         session['first_name'] = user['name'].split()[0]
