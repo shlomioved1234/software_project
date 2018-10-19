@@ -1,0 +1,155 @@
+
+{% extends "base.html" %}
+
+{% set nav_active = 'profiles' %}
+{% set authenticated = True %}
+
+{% block head %}
+{{ super() }}
+{% endblock %}
+
+{% block btitle %}
+Profiles
+{% endblock %}
+
+{% block bstyles %}
+<style>
+    .panel-body .img-responsive {
+    	margin: 0 auto;
+    }
+    .h4 {
+    	margin: 2pt;
+    	padding: 2pt;
+    }
+</style>
+{% endblock %}
+
+{% block page_content %}
+
+<div class="col-md-7">
+	<div class="page-header">
+		<h2>My Profile</h2>
+	</div>
+	{% with error = get_flashed_messages(with_categories=true) %}
+	{% for c, e in error %}
+	<div class="alert alert-{{c}} alert-dismissable fade in">
+    	<a href='#' class="close" data-dismiss="alert" aria-label="close">&times;</a>
+    	{{e}}
+	</div>
+	{% endfor %}
+	{% endwith %}
+	<div class="left author-thumbnail">
+        <img class="profile-photo" src="http://public.slidesharecdn.com/images/user-48x48.png">
+            </a>
+        <h2 style="display:inline;">{{me.name}}</h2>
+        <h4>Rating:
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" style="display:inline;">
+            {% if me.rating == "1" %}
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star"></span>
+                <span class="fa fa-star"></span>
+                <span class="fa fa-star"></span>
+                <span class="fa fa-star"></span>
+            {%elif (me.rating == "2") %}
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star"></span>
+                <span class="fa fa-star"></span>
+                <span class="fa fa-star"></span>
+            {%elif (me.rating == "3") %}
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star"></span>
+                <span class="fa fa-star"></span>
+            {%elif (me.rating == "4") %}
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star"></span>
+            {%elif me.rating == "5" %}
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+            {% endif %}
+        <style>
+            .checked {
+                color: orange;
+            }
+        </style>
+        <br>
+        School:{{me.school}}
+        </h4>
+    <div class="col-md-7">
+        <div class="page-header">
+            <h2>Other Profiles</h2>
+        </div>
+        {% for user in profiles %}
+        <div class="left author-thumbnail">
+            <img class="profile-photo" src="http://public.slidesharecdn.com/images/user-48x48.png">
+                </a>
+                <h2 style="display:inline;">{{user.name}}</h2>
+                <h4>Rating:
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" style="display:inline;">
+                        {%if (user.rating == "1") %}
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star"></span>
+                            <span class="fa fa-star"></span>
+                            <span class="fa fa-star"></span>
+                            <span class="fa fa-star"></span>
+                        {%elif (user.rating == "2") %}
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star"></span>
+                            <span class="fa fa-star"></span>
+                            <span class="fa fa-star"></span>
+                        {%elif (user.rating == "3") %}
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star"></span>
+                            <span class="fa fa-star"></span>
+                        {%elif (user.rating == "4") %}
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star"></span>
+                        {%elif (user.rating == "5") %}
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star checked"></span>
+                            <span class="fa fa-star checked"></span>
+                        {% endif %}
+                        <style>
+                            .checked {
+                                color: orange;
+                            }
+                        </style>
+                        <br>
+                        School:{{user.school}}
+                        </h4>
+            
+                <form class="form-inline" style="padding-top:0pt;padding-bottom:0pt;" action="/rateUser" method="POST">
+                    <div class="form-group">
+                        <div class="input-group">
+                            <input type="number" min="1" max="5" class="form-control" name="rating" placeholder="Rate Your User Here!" required>
+                                <input type="hidden" class="form-control" name="id" value="{{user.id}}">
+                                    <label class="input-group-btn">
+                                        <button type="submit" class="btn btn-default">
+                                            Rate User
+                                        </button>
+                                    </label>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                {% endfor %}
+
+{% endblock %}
+
+
