@@ -11,10 +11,10 @@
 {% block page_content %}
 
 <div class="container col-sm-offset-3 col-sm-6">
-
+    
     <div class="well form-well">
         <h3 class="text-center"> Register </h3>
-        <form action="/registerAuth" method="POST">
+        <form action="/registerAuth" method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="username">School Email Address</label>
                 <input class="form-control" id="email" style="font-size:16pt" type="text" name="email" placeholder="email_address@school.edu" required/>
