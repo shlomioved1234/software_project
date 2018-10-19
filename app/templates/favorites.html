@@ -1,13 +1,13 @@
- {% extends "base.html" %} {% set nav_active = 'favorites' %} {% set authenticated = True %} {% block head %} {{ super() }} {% endblock %} {% block btitle %} Favorites {% endblock %} {% block bstyles %}
+{% extends "base.html" %} {% set nav_active = 'favorites' %} {% set authenticated = True %} {% block head %} {{ super() }} {% endblock %} {% block btitle %} Favorites {% endblock %} {% block bstyles %}
 <style>
     form {
         padding-top: 20px;
         padding-bottom: 30px;
     }
-    
-    .panel-body .img-responsive {
-        margin: 0 auto;
-    }
+
+.panel-body .img-responsive {
+    margin: 0 auto;
+}
 </style>
 {% endblock %} {% block page_content %}
 
@@ -28,10 +28,16 @@
     </div>
     <div class="panel-body">
         <a href="#col{{line.id}}" data-toggle="collapse">
-            <img src="/content/{{line.filepath}}" alt="{{line.title}}" class="img-responsive img-rounded">
-        </a>
+            <img src="/content/{{line.photo}}" alt="{{line.title}}" class="img-responsive img-rounded">
+                </a>
         <div class="panel-body">
-            <span class="text-primary">{{line.description}}</span>
+            <span class="text-primary">Description: {{line.description}}</span>
+        </div>
+        <div class="panel-body">
+            <span class="text-primary">Current Price: ${{line.current_price}}</span>
+        </div>
+        <div class="panel-body">
+            <span class="text-primary">Current Bidder: {{line.current_bidder}}</span>
         </div>
         {% for t in line.tags %}
         <span style="padding: 4pt; display: inline-block; margin-top: 5pt;" class="label label-default">
@@ -40,43 +46,28 @@
         {% endfor %}
         <div id="col{{line.id}}" class="collapse">
             <hr>
-            <form class="form-inline" style="padding-top:0pt;padding-bottom:0pt;" action="/tag" method="POST">
+            
+            <form class="form-inline" style="padding-top:0pt;padding-bottom:0pt;" action="/bid" method="POST">
                 <div class="form-group">
                     <div class="input-group">
-                        <input type="text" class="form-control" name="taggee" placeholder="Tag a friend!" required>
-                        <input type="hidden" class="form-control" name="id" value="{{line.id}}">
-                        <label class="input-group-btn">
-                            <button type="submit" class="btn btn-default">
-                                Tag
-                            </button>
-                        </label>
-                    </div>
+                        <input type="number" class="form-control" name="bid" placeholder="Place a bid here!" required>
+                            <input type="hidden" class="form-control" name="id" value="{{line.id}}">
+                                <label class="input-group-btn">
+                                    <button type="submit" class="btn btn-default">
+                                        Enter Bid
+                                    </button>
+                                </label>
+                                </div>
                 </div>
             </form>
-            {% if username == line.username %}
-            <hr>
-            <form class="form-inline" style="padding-top:10px;padding-bottom:0pt;" action="/share" method="POST">
-                <div class="form-group">
-                    <select class="form-control" name="group_name" required>
-                        <option value="" disabled selected hidden>Group</option>
-                        {% for group in groups %}
-                        <option>{{group.group_name}}</option>
-                        {% endfor %}
-                    </select>
-                    <input type="hidden" class="form-control" name="id" value="{{line.id}}" />
-                    <button type="submit" class="btn btn-default">
-                        Share
-                    </button>
-                </div>
-            </form>
-            {% endif %}
+
             <hr>
             <form class="form-inline" action="/favoriteDel" method="POST">
-            
+                
                 <div class="form-group">
-                    <input type="hidden" class="form-control" name="id" value="96" />
+                    <input type="hidden" class="form-control" name="id" value="{{line.id}}" />
                     <button type="submit" class="btn btn-default btn-sm">
-                        <span class="glyphicon glyphicon-open"></span> Unsave
+                        <span class="glyphicon glyphicon-open"></span> UnFavorite
                     </button>
                 </div>
             </form>
@@ -92,22 +83,22 @@
             <div class="form-group">
                 <div class="input-group">
                     <input type="text" class="form-control" name="comment" placeholder="Make a comment!">
-                    <input type="hidden" class="form-control" name="id" value="{{line.id}}">
-                    <label class="input-group-btn">
-                    <button type="submit" class="btn btn-default">Comment</button>
-                </label>
-                </div>
+                        <input type="hidden" class="form-control" name="id" value="{{line.id}}">
+                            <label class="input-group-btn">
+                                <button type="submit" class="btn btn-default">Comment</button>
+                            </label>
+                            </div>
             </div>
         </form>
-        {% for c in line.comments %}
+        {% for key, c in line.comments.items() %}
         <div style="padding-bottom: 5pt;" class="container-fluid">
-            <span class="text-info">{{c.first_name}} {{c.last_name}}</span> &nbsp;
+            <span class="text-info">{{c.name}}</span> &nbsp;
             <div class="pull-right">
                 {% if (username == c.username or username == line.username) %}
-                <a href="/commentdel?username={{c.username}}&id={{line.id}}&ts={{c.timest}}" title="Remove this" class="close">&times;</a> {% endif %}
+                <a href="/commentdel?username={{c.username}}&cid={{key}}&ts={{c.time}}&id={{line.id}}" title="Remove this" class="close">&times;</a> {% endif %}
             </div>
-            <small>{{c.timest|time_ago}}</small>
-            <br /> {{c.comment_text}}
+            <small>{{c.time}}</small>
+            <br /> {{c.text}}
         </div>
         {% endfor %}
     </div>
