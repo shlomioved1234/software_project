@@ -31,8 +31,9 @@
                 <ul class="nav navbar-nav">
                     <li class="{% if nav_active=='home'%}active{%endif%}"><a href="/home">Home</a></li>
                     {% if authenticated %}
-                    <li class="{% if nav_active=='friends'%}active{%endif%}"><a href="/chat">Chat</a></li>
+                    <li class="{% if nav_active=='chat'%}active{%endif%}"><a href="/chat">Chat</a></li>
                     <li class="{% if nav_active=='favorites'%}active{%endif%}"><a href="/favorites">Favorites</a></li>
+                    <li class="{% if nav_active=='profiles'%}active{%endif%}"><a href="/profiles">Profiles</a></li>
                     {%endif%}
                     <li class="{% if nav_active=='about'%}active{%endif%}"><a href="/about">About</a></li>
                 </ul>
