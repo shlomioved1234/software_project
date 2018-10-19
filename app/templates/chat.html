@@ -1,7 +1,7 @@
 
 {% extends "base.html" %}
 
-{% set nav_active = 'friends' %}
+{% set nav_active = 'chat' %}
 {% set authenticated = True %}
 
 {% block head %}
@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block btitle %}
-Friends
+Chat
 {% endblock %}
 
 {% block bstyles %}
@@ -28,7 +28,7 @@ Friends
 
 <div class="col-md-7">
 	<div class="page-header">
-		<h2>FriendGroups</h2>
+		<h2>Chat</h2>
 	</div>
 	{% with error = get_flashed_messages(with_categories=true) %}
 	{% for c, e in error %}
@@ -40,18 +40,18 @@ Friends
 	{% endwith %}
 	<div class="well">
 		<h4>
-			Create a FriendGroup
+			Start a Chat
 		</h4>
-		<form class="form" style="padding-bottom:0pt;" action="/groupadd" method="POST">
+		<form class="form" style="padding-bottom:0pt;" action="/startChat" method="POST">
 			<div class="form-group">
-				<input type="text" class="form-control" name="group_name" placeholder="Group name" required/>
+				<input type="text" class="form-control" name="user" placeholder="User" required/>
 			</div>
 			<div class="form-group">
 				<textarea class="form-control" rows="3"
-				name="description" placeholder="Description"></textarea>
+				name="message" placeholder="Message"></textarea>
 			</div>
 			<button class="btn btn-default btn-block">
-				Submit
+				Send Message
 			</button>
 		</form>
 	</div>
