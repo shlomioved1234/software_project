@@ -14,6 +14,7 @@ import uuid
 import time
 import pyrebase
 
+
 config = {
     "apiKey": "AIzaSyB4F-ap3T8z1xdRmwWSvMXYBqrBfdh8_BQ",
     "authDomain": "unibid-fba8a.firebaseapp.com",
@@ -22,6 +23,7 @@ config = {
 }
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
+st = firebase.storage()
 
 def login_required(f):
     @wraps(f)
@@ -212,11 +214,13 @@ def post():
         filename = secure_filename(photo.filename)
         os.chmod(app.config["PHOTO_DIRECTORY"], 0o775)
         newfilename = uuid.uuid4().hex
-        photo.save(os.path.join(app.config["PHOTO_DIRECTORY"], newfilename))
-
+        local_path = os.path.join(app.config["PHOTO_DIRECTORY"], newfilename)
+        photo.save(local_path)
+        token = st.child("images/"+newfilename+".png").put(local_path)
+        filepath = st.child("images/"+newfilename+".png").get_url(token['downloadTokens'])
     
     user = db.child("users").child(make_unique_id(uname)).get().val()
-    ad = { "title": title, "description": description, "photo": newfilename, "date": date, "name":user["name"], "username": uname, "current_price":starting_price, "current_bidder": "None", "comments": {"placeholder":{"username":"placeholder", "text":"placeholder", "time": "placeholder", "name": "placeholder"} } }
+    ad = { "title": title, "description": description, "photo": filepath, "date": date, "name":user["name"], "username": uname, "current_price":starting_price, "current_bidder": "None", "comments": {"placeholder":{"username":"placeholder", "text":"placeholder", "time": "placeholder", "name": "placeholder"} } }
     db.child("ads").push(ad)
     
     return redirect(url_for('home'))
@@ -286,17 +290,6 @@ def postdel():
     else:
         db.child("ads").child(id).remove()
     return redirect(url_for('home'))
-
-
-# Retrieve user photos only if logged in
-@app.route('/content/<path:filename>')
-def retrieve_file(filename):
-    if not authenticated():
-        abort(404)
-
-    uname = session['username']
-    return send_from_directory(app.config['PHOTO_DIRECTORY'], filename)
-
 
 @app.route('/comment', methods=['POST'])
 @login_required
