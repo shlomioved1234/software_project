@@ -27,7 +27,7 @@ Chat
 {% block page_content %}
 
 <div class="col-md-7">
-	<div class="page-header">
+	<div class="page-header" clear:both;>
 		<h2>Chat</h2>
 	</div>
 	{% with error = get_flashed_messages(with_categories=true) %}
@@ -40,173 +40,67 @@ Chat
 	{% endwith %}
 	<div class="well">
 		<h4>
-			Start a Chat
+			Send a Message
 		</h4>
 		<form class="form" style="padding-bottom:0pt;" action="/startChat" method="POST">
 			<div class="form-group">
-				<input type="text" class="form-control" name="user" placeholder="User" required/>
+                <label for="user">User:</label>
+                <select name="user" required/>
+                    {% for user in users %}
+                    <option id= "user" value={{user.id}}>{{user.name}}</option>
+                    {% endfor %}
+                </select>
+                    <input type="hidden" class="form-control" name="id" value="{{userid}}">
 			</div>
 			<div class="form-group">
 				<textarea class="form-control" rows="3"
-				name="message" placeholder="Message"></textarea>
+				name="message" placeholder="Message" required/></textarea>
 			</div>
 			<button class="btn btn-default btn-block">
 				Send Message
 			</button>
 		</form>
 	</div>
-	{% if groups %}
-	<div class="well">
-		<h4>Add a member</h4>
-		<form class="form" action="/memberadd{%if duplicate_name_error %}u{%endif%}" method="POST">
-			<div class="form-group">
-				<select class="form-control" name="group_name" required>
-					<option value="" disabled selected hidden>Group</option>
-					{% for group in groups %}
-					<option>{{group.group_name}}</option>
-					{% endfor %}
-				</select>
-			</div>
-			{% if duplicate_name_error %}
-			<div class="form-group">
-				<select class="form-control" name="username">
-					<option value="" disabled selected hidden>Usernames</option>
-					{% for u in usernames %}
-					<option>{{u.username}}</option>
-					{% endfor %}
-				</select>
-			</div>
-			{% else %}
-			<div class="form-group">
-                <div class="row">
-                    <div class="col-sm-6">                    
-                        <input class="form-control" style="font-size:16pt" type="text" name="fname" placeholder="First Name" required/>
-                    </div>
-                    <div class="col-sm-6">
-                        <input class="form-control" id="lname" style="font-size:16pt" type="text" name="lname" placeholder="Last Name" required/>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            <button class="btn btn-default btn-block">
-            	<span class="glyphicon glyphicon-plus"></span>
-            	Add Member
-            </button>
-		</form>
-	</div>
-	{% if duplicate_name_error %}
-	<div class="alert alert-warning alert-dismissable fade in">
-    	<a href='#' class="close" data-dismiss="alert" aria-label="close">&times;</a>
-    	Multiple users have that name. Select the username you wish to add.
-	</div>
-	{% endif %}
-	{% for group in groups %}
-		<div class="panel panel-default">
-			<div class="panel-heading">
-				{{group.group_name}}
-				<span class="text-muted">&#9658;</span>
-				{{group.description}}
-			</div>
-			<div class="panel-body">
-				{% if group.members %}
-				<ul>
-				{% for m in group.members %}
-					<li style="padding-bottom: 3pt;">
-						{{m.first_name}} {{m.last_name}}
-						{% if m.username != session['username'] %}
-						<div class="pull-right">
-							<a
-							href="/memberdel?member={{m.username}}&group={{group.group_name}}"
-							title="Remove this friend"
-							class="close">
-								&times;
-							</a>
-						</div>
-						{% endif %}
-					</li>
-				{% endfor %}
-				</ul>
-				{% else %}
-				No members.
-				{% endif %}
-			</div>
-		</div>
-	{% endfor %}
-	{% endif %}
 </div>
-
-<div class="col-md-5">
-
-{% if tags_pending or tags_proposed %}
-	<div class="page-header">
-		<h2>Tags</h2>
-	</div>
-{% endif %}
-
-{% if tags_pending %}
-	<div class="panel panel-default">
-		<div class="panel-heading">
-			<h2 style="margin: 3pt;">Pending Tags</h2>
-		</div>
-		<div class="panel-body">
-			{% for t in tags_pending %}
-				<div>
-					{% if loop.index != 1 %}
-					<hr>
-					{% endif %}
-					<div class="pull-right">
-						<small>
-							{{t.timest|time_ago}}
-						</small>
-					</div>
-					<span class="text-info">
-						{{t.first_name}} {{t.last_name}}
-					</span>
-					has tagged you in
-					<a href="/home#{{t.id}}">
-						{{t.content_name}}
-					</a>
-					<br />
-					<a href="/tagaccept?id={{t.id}}&tagger={{t.username_tagger}}&taggee={{t.username_taggee}}">accept</a>
-					&middot;
-					<a href="/tagdecline?id={{t.id}}&tagger={{t.username_tagger}}&taggee={{t.username_taggee}}">decline</a>
-				</div>
-			{% endfor %}
-		</div>
-	</div>
-{% endif %}
-
-{% if tags_proposed %}
-	<div class="panel panel-default">
-		<div class="panel-heading">
-			<h2 style="margin: 3pt;">Proposed Tags</h2>
-		</div>
-		<div class="panel-body">
-			{% for t in tags_proposed %}
-				<div>
-					{% if loop.index != 1 %}
-					<hr>
-					{% endif %}
-					<div class="pull-right">
-						<small>
-							{{t.timest|time_ago}}
-						</small>
-					</div>
-					You tagged
-					<span class="text-info">
-						{{t.first_name}} {{t.last_name}}
-					</span>
-					in
-					<a href="/home#{{t.id}}">
-						{{t.content_name}}
-					</a>
-				</div>
-			{% endfor %}
-		</div>
-	</div>
-{% endif %}
-
+{% if chats %}
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<div class="page-header" clear:both;>
+    <h2> Open Chats </h2>
 </div>
+{% for chat in chats %}
+<h4>Chat with <i>{{chat.name}}</i></h4>
+
+{% for key, message in chat.items() %}
+    {% if key != "name" %}
+    <div class="well">
+        <p>{{message.sendername}}:{{message.message}}</p>
+        <span class="time-right">{{message.time}}</span>
+    </div>
+    {% endif %}
+
+{% endfor %}
+<br>
+{% endfor %}
+{% endif %}
+
+
 
 {% endblock %}
 
