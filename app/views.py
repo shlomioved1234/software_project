@@ -332,9 +332,10 @@ def profiles():
     all_profiles = []
     for key, value in data.items():
         if(key!="placeholder"):
+            value["rating"] = str(round(float(value["rating"])))
             value["id"]=key
             all_profiles.append(value)
-
+    my_profile["rating"] = str(round(float(my_profile["rating"])))
     return render_template('profiles.html', username=uname, profiles=all_profiles, me = my_profile, fname=get_fname())
 
 @app.route('/rateUser', methods= ['POST'])
@@ -343,11 +344,11 @@ def rateUser():
     rating = int(request.form['rating'])
     user_id = request.form['id']
     user = db.child("users").child(user_id).get().val()
-    current_rating = int(user["rating"])
+    current_rating = float(user["rating"])
     num_of_ratings = int(user["num_of_ratings"])
     new_rating = ((current_rating*num_of_ratings)+rating)/(num_of_ratings+1)
     num_of_ratings += 1
-    db.child("users").child(user_id).update({"rating":str(round(new_rating)), "num_of_ratings":str(num_of_ratings)})
+    db.child("users").child(user_id).update({"rating":str(new_rating), "num_of_ratings":str(num_of_ratings)})
     return redirect(url_for('profiles'))
 
 
