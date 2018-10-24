@@ -81,7 +81,9 @@ Profiles
             }
         </style>
         <br>
-        School:{{me.school}}
+        School: {{me.school}}
+        <br>
+        Total Ratings: {{me.num_of_ratings}}
         </h4>
     <div class="col-md-7">
         <div class="page-header">
@@ -131,7 +133,9 @@ Profiles
                             }
                         </style>
                         <br>
-                        School:{{user.school}}
+                        School: {{user.school}}
+                        <br>
+                        Total Ratings: {{user.num_of_ratings}}
                         </h4>
             
                 <form class="form-inline" style="padding-top:0pt;padding-bottom:0pt;" action="/rateUser" method="POST">

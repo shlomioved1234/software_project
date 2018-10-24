@@ -129,6 +129,7 @@ def registerAuth():
         'hash': hash,
         'school': school,
         'rating':"5",
+        'num_of_ratings':"0"
     }
     try:
         user_id = make_unique_id(email)
@@ -339,9 +340,14 @@ def profiles():
 @app.route('/rateUser', methods= ['POST'])
 @login_required
 def rateUser():
-    rating = request.form['rating']
+    rating = int(request.form['rating'])
     user_id = request.form['id']
-    db.child("users").child(user_id).update({"rating":rating})
+    user = db.child("users").child(user_id).get().val()
+    current_rating = int(user["rating"])
+    num_of_ratings = int(user["num_of_ratings"])
+    new_rating = ((current_rating*num_of_ratings)+rating)/(num_of_ratings+1)
+    num_of_ratings += 1
+    db.child("users").child(user_id).update({"rating":str(round(new_rating)), "num_of_ratings":str(num_of_ratings)})
     return redirect(url_for('profiles'))
 
 
